@@ -160,11 +160,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // Navigations
     document.getElementById('btnSidenavNew').addEventListener('click', () => showFormView());
     document.getElementById('btnMobileNew').addEventListener('click', () => showFormView());
-    document.getElementById('btnMobileHome').addEventListener('click', () => { 
-        activePlatformMenu = 'all'; 
-        activePlatformTab = 'all'; 
-        activeKategoriTab = 'all';
-        showListView(); 
+    document.getElementById('btnMobileMenu').addEventListener('click', () => {
+        const data = getLocalData();
+        let plats = new Set();
+        data.forEach(item => {
+            let p = (item.platform || item.sku || 'Lainnya').trim().toUpperCase();
+            plats.add(p);
+        });
+        const sortedPlats = Array.from(plats).sort();
+        
+        let html = `
+            <div class="flex flex-col gap-2 mt-4 text-left">
+                <button onclick="Swal.close(); showMasterView()" class="w-full text-left bg-indigo-50 border border-indigo-100 hover:bg-slate-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                    <i class="fa-solid fa-database text-indigo-500 mr-3 text-lg w-6 text-center"></i>
+                    <div><span class="block font-bold text-indigo-800 text-sm tracking-wide">Master Data Produk</span></div>
+                </button>
+                <div class="h-px bg-gray-200 my-1"></div>
+                <button onclick="Swal.close(); setPlatformMenu('all')" class="w-full text-left bg-blue-50 border border-blue-100 hover:bg-blue-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                    <i class="fa-solid fa-layer-group text-blue-500 mr-3 text-lg w-6 text-center"></i>
+                    <div><span class="block font-bold text-blue-800 text-sm tracking-wide">Beranda (Semua)</span></div>
+                </button>
+        `;
+        
+        sortedPlats.forEach(p => {
+            const pKey = p.toLowerCase();
+            let iconCls = 'fa-solid fa-store';
+            
+            html += `
+                <button onclick="Swal.close(); setPlatformMenu('${pKey.replace(/'/g, "\\\\'")}')" class="w-full text-left bg-white border border-gray-200 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center shadow-sm mt-1 group">
+                    <i class="${iconCls} text-gray-400 group-hover:text-blue-500 mr-3 text-lg w-6 text-center transition-colors"></i>
+                    <div><span class="block font-bold text-gray-700 text-sm tracking-wide">${p}</span></div>
+                </button>
+            `;
+        });
+        
+        html += `</div>`;
+        
+        Swal.fire({
+            title: 'Menu Navigasi',
+            html: html,
+            showConfirmButton: false,
+            showCloseButton: true
+        });
     });
     
     document.getElementById('btnMobileSettings').addEventListener('click', () => {
