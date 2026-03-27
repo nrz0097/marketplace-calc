@@ -44,6 +44,9 @@
         </div>
         <div class="p-4 border-t border-gray-100 space-y-1.5 bg-gray-50/50">
             <input type="file" id="inputFileImpor" accept=".json" class="hidden">
+            <button id="btnReverseSidenav"
+                class="w-full text-left text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-4 py-2.5 text-sm font-bold rounded-lg transition-colors flex items-center"><i
+                    class="fa-solid fa-calculator min-w-5 mr-3 text-center text-blue-400"></i>Reverse Kalkulator</button>
             <button id="btnEksporSidenav"
                 class="w-full text-left text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center"><i
                     class="fa-solid fa-download min-w-5 mr-3 text-center text-gray-400"></i>Ekspor / Backup</button>
@@ -635,6 +638,55 @@
                </div>
           </div>
        </div>
+    </div>
+
+    <!-- Reverse Calc Modal Overlay -->
+    <div id="reverseModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-y-auto w-full pt-10 pb-10">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 my-auto transform transition-transform duration-300 scale-95" id="reverseModalContent">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                <h3 class="text-base font-black text-gray-800"><i class="fa-solid fa-calculator text-blue-500 mr-2"></i>Reverse Calculator</h3>
+                <button onclick="closeReverseModal()" class="text-gray-400 hover:text-gray-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <p class="text-[11px] font-medium text-gray-500 mb-5 bg-gray-50 p-2.5 rounded-lg border border-gray-100">Cari Modal Dasar (HPP) dari Harga Coret (Marketplace) yang sudah diketahui.</p>
+
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-gray-700 uppercase mb-2">Harga Coret (Marketplace) <span class="text-red-500">*</span></label>
+                    <div class="relative group">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-blue-500 font-bold">Rp</span>
+                        <input type="text" id="revHargaCoret" oninput="formatRupiathEvent(event); calculateReverse()" required class="input-rupiah w-full pl-12 pr-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-base font-black text-blue-700 font-mono shadow-sm bg-blue-50/30" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Admin HPP (%)</label>
+                        <div class="relative">
+                            <input type="number" step="any" id="revAdminHpp" oninput="calculateReverse()" value="30" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 font-bold">%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Markup Harga (%)</label>
+                        <div class="relative">
+                            <input type="number" step="any" id="revMarkup" oninput="calculateReverse()" value="95" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 font-bold">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center shadow-inner relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-indigo-500/10 rounded-full blur-md"></div>
+                    <span class="block uppercase text-indigo-800 font-bold text-[10px] tracking-widest mb-1">Hasil Modal Dasar (HPP)</span>
+                    <span id="revHasilHpp" class="block text-2xl font-black text-indigo-600 font-mono">Rp 0</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     </div>

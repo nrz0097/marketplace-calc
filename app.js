@@ -209,6 +209,13 @@ document.addEventListener('DOMContentLoaded', () => {
             title: 'Pengaturan',
             html: `
                 <div class="flex flex-col gap-3 mt-4">
+                    <button onclick="Swal.close(); showReverseModal()" class="w-full text-left bg-blue-50 border border-blue-100 hover:bg-blue-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-calculator text-blue-500 mr-3 text-lg w-6 text-center"></i>
+                        <div>
+                            <span class="block font-bold text-blue-800 text-sm">Reverse Kalkulator</span>
+                            <span class="block text-[10px] text-blue-500">Cari HPP dari Harga Coret</span>
+                        </div>
+                    </button>
                     <button onclick="Swal.close(); handleExport()" class="w-full text-left bg-white border border-gray-200 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center shadow-sm">
                         <i class="fa-solid fa-download text-indigo-500 mr-3 text-lg w-6 text-center"></i>
                         <div>
@@ -259,6 +266,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Search Listener
     searchInput.addEventListener('input', renderListView);
+
+    // Reverse Calculator
+    document.getElementById('btnReverseSidenav').addEventListener('click', showReverseModal);
 
     // Export Import
     document.getElementById('btnEksporSidenav').addEventListener('click', handleExport);
@@ -793,6 +803,46 @@ window.closeBulkMarkupModal = function() {
     setTimeout(() => {
         modal.classList.add('hidden');
     }, 300);
+}
+
+window.showReverseModal = function() {
+    const modal = document.getElementById('reverseModal');
+    document.getElementById('revHargaCoret').value = '';
+    document.getElementById('revAdminHpp').value = '30';
+    document.getElementById('revMarkup').value = '95';
+    document.getElementById('revHasilHpp').textContent = 'Rp 0';
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        document.getElementById('reverseModalContent').classList.remove('scale-95');
+    }, 10);
+}
+
+window.closeReverseModal = function() {
+    const modal = document.getElementById('reverseModal');
+    modal.classList.add('opacity-0');
+    document.getElementById('reverseModalContent').classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+window.calculateReverse = function() {
+    const coret = parseRupiah(document.getElementById('revHargaCoret').value);
+    const adminHpp = parseFloat(document.getElementById('revAdminHpp').value) || 0;
+    const markup = parseFloat(document.getElementById('revMarkup').value) || 0;
+    
+    if (coret <= 0) {
+        document.getElementById('revHasilHpp').textContent = 'Rp 0';
+        return;
+    }
+    
+    // HPP = Harga Coret / ((1 + Admin/100) * (1 + Markup/100))
+    const multiplier = (1 + (adminHpp / 100)) * (1 + (markup / 100));
+    const hpp = coret / multiplier;
+    
+    document.getElementById('revHasilHpp').textContent = 'Rp ' + formatRupiahString(hpp);
 }
 
 window.rollbackBulkMarkup = function() {
