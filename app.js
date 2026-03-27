@@ -1444,3 +1444,55 @@ window.syncAllCalculations = function() {
         }
     });
 }
+
+// === PWA SYSTEM LOGIC ===
+let deferredPrompt;
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('PWA Service Worker terdaftar!', reg.scope))
+            .catch(err => console.log('PWA Registrasi SW Gagal:', err));
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    
+    // Update UI notify the user they can install the PWA
+    const pwaBanner = document.getElementById('pwaInstallBanner');
+    if(pwaBanner) {
+        pwaBanner.classList.remove('hidden');
+        setTimeout(() => pwaBanner.classList.remove('translate-y-32'), 100);
+    }
+});
+
+const btnInstallPWA = document.getElementById('pwaInstallBtn');
+if(btnInstallPWA) {
+    btnInstallPWA.addEventListener('click', async () => {
+        const pwaBanner = document.getElementById('pwaInstallBanner');
+        pwaBanner.classList.add('translate-y-32');
+        setTimeout(() => pwaBanner.classList.add('hidden'), 500);
+        
+        if (deferredPrompt) {
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User respons terhadap instalasi: ${outcome}`);
+            deferredPrompt = null;
+        }
+    });
+}
+
+const btnClosePWA = document.getElementById('pwaCloseBtn');
+if(btnClosePWA) {
+    btnClosePWA.addEventListener('click', () => {
+        const pwaBanner = document.getElementById('pwaInstallBanner');
+        pwaBanner.classList.add('translate-y-32');
+        setTimeout(() => pwaBanner.classList.add('hidden'), 500);
+    });
+}

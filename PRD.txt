@@ -1,0 +1,112 @@
+Product Requirements Document (PRD): Aplikasi Kalkulator & Manajemen Harga Jual
+1. Ringkasan Proyek
+Aplikasi berbasis web sederhana (Single Page Application) untuk menghitung, menyimpan, dan mengelola struktur harga produk. Aplikasi ini secara otomatis mengkalkulasi Harga Jual, Pendapatan Bersih, dan Profit berdasarkan input Modal (HPP), persentase Markup/Diskon, serta biaya admin marketplace yang dinamis.
+
+2. Tech Stack
+Struktur & UI: HTML5
+
+Styling: Tailwind CSS (via CDN untuk kesederhanaan)
+
+Logika & Interaktivitas: Vanilla JavaScript
+
+Notifikasi & Konfirmasi (Pop-up): SweetAlert2
+
+Penyimpanan Data: peramban localStorage
+
+Ikon: FontAwesome / Heroicons (Opsional)
+
+3. Fitur Utama (Core Features)
+A. Manajemen Input Kalkulasi Harga
+Formulir input dinamis yang wajib memiliki validasi data (tidak boleh kosong, angka tidak boleh negatif).
+
+Data Dasar Produk: Nama Produk, SKU (opsional).
+
+Variabel Harga Pembentuk:
+
+HPP / Modal Dasar (Rp)
+
+Admin HPP (%)
+
+Markup (%)
+
+Diskon (%)
+
+Biaya Platform Dinamis (Dynamic Fields):
+
+Fitur untuk "Tambah Biaya Platform" secara bebas (karena aturan tiap marketplace berbeda).
+
+Setiap baris biaya platform berisi: Nama Potongan (misal: Komisi Kategori), Nilai Persentase (%), dan opsi Batas Maksimal Potongan / Flat Fee (Rp) jika ada.
+
+B. Kalkulasi Otomatis (Auto-Calculate)
+Sistem secara real-time atau saat tombol diklik akan memproses rumus berikut (sesuai breakdown sebelumnya):
+
+Harga Retail = HPP + (HPP × Admin HPP%)
+
+Harga Awal (Coret) = Harga Retail + (Harga Retail × Markup%)
+
+Harga Diskon (Harga Jual) = Harga Awal - (Harga Awal × Diskon%)
+
+Total Potongan Platform = Akumulasi dari semua biaya platform dinamis yang diinput (menghitung % dari Harga Diskon, dengan mempertimbangkan batas maksimal / cap dalam Rupiah jika diisi).
+
+Pendapatan Bersih = Harga Diskon - Total Potongan Platform
+
+Profit = Pendapatan Bersih - HPP
+
+C. Manajemen Data (CRUD) & Local Storage
+Simpan Data: Menyimpan hasil kalkulasi ke dalam localStorage dalam format JSON.
+
+Daftar Harga: Menampilkan semua produk yang sudah dihitung dalam bentuk Tabel atau Grid Card.
+
+Hapus & Edit: Mengedit data yang sudah ada atau menghapus data.
+
+Konfirmasi Tindakan: Setiap aksi krusial (Simpan, Edit, Hapus) wajib menggunakan dialog konfirmasi dari SweetAlert2.
+
+D. Backup & Restore (Ekspor/Impor Lokal)
+Backup (Ekspor): Mengunduh seluruh data dari localStorage menjadi sebuah file .json ke perangkat lokal.
+
+Restore (Impor): Mengunggah file .json untuk memulihkan atau menimpa data di localStorage. Dilengkapi validasi untuk memastikan format JSON yang diunggah sesuai dengan struktur aplikasi.
+
+4. User Interface (UI) & User Experience (UX)
+Layout: Responsive design (Mobile-first). Terbagi menjadi dua area utama (atau dua tab):
+
+Area Kalkulator: Form input di sebelah kiri/atas, dan Kartu Ringkasan Hasil Kalkulasi di sebelah kanan/bawah.
+
+Area Daftar Produk: Tabel daftar produk yang sudah tersimpan beserta tombol aksi, Ekspor, dan Impor.
+
+Tema: Minimalis, bersih, dengan warna pembeda untuk angka krusial (misal: Hijau untuk Pendapatan, Biru untuk Harga Jual, Merah/Oranye untuk Potongan/Profit).
+
+Interaksi Form: Input nominal Rupiah secara otomatis memiliki format pemisah ribuan (contoh: 2300000 otomatis menjadi 2.300.000) saat diketik agar mudah dibaca.
+
+5. Struktur Data (JSON Model)
+Rancangan format data yang akan disimpan di localStorage (productList):
+
+JSON
+[
+  {
+    "id": "1710403939201", 
+    "namaProduk": "DELIGHT 120 BIG KOIL",
+    "hpp": 2300000,
+    "adminHppPersen": 30,
+    "markupPersen": 95,
+    "diskonPersen": 50,
+    "platformFees": [
+      { "nama": "Komisi Kategori", "persen": 8, "maksimalRp": 0 },
+      { "nama": "Komisi Dinamis", "persen": 6, "maksimalRp": 40000 },
+      { "nama": "Biaya Proses Pesanan", "persen": 0, "maksimalRp": 1250 }
+    ],
+    "hasil": {
+      "hargaAwal": 5830500,
+      "hargaJual": 2915250,
+      "totalPotongan": 294470,
+      "pendapatan": 2620780,
+      "profit": 320780
+    },
+    "tanggalDibuat": "2026-03-27T10:32:00"
+  }
+]
+6. Skenario Validasi & Error Handling
+Jika user mencoba menyimpan tanpa mengisi HPP atau Nama Produk -> Muncul SweetAlert Error.
+
+Jika nilai persentase diisi lebih dari 100% (kecuali untuk markup) -> Tampilkan peringatan visual di form.
+
+Jika file Restore yang diunggah korup atau bukan JSON yang valid -> Muncul SweetAlert peringatan.

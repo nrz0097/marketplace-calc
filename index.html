@@ -15,6 +15,11 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 
 <body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800 font-sans antialiased">
@@ -630,6 +635,21 @@
                </div>
           </div>
        </div>
+    </div>
+
+    </div>
+
+    <!-- PWA Install Banner (Mobile) -->
+    <div id="pwaInstallBanner" class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 transform translate-y-32 transition-transform duration-500 flex items-center gap-4 hidden">
+        <div class="bg-indigo-100 px-3 py-2 rounded-lg shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-cloud-arrow-down text-indigo-600 text-xl"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h4 class="text-sm font-bold text-gray-800 leading-tight">Install Aplikasi</h4>
+            <p class="text-[11px] text-gray-500 line-clamp-2 mt-0.5">Akses offline tanpa browser, ringan layaknya aplikasi asli!</p>
+        </div>
+        <button id="pwaInstallBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0">Install</button>
+        <button id="pwaCloseBtn" class="text-gray-400 hover:text-gray-600 h-full p-2 shrink-0"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <!-- Script Utama -->
