@@ -167,6 +167,32 @@ document.addEventListener('DOMContentLoaded', () => {
         showListView(); 
     });
     
+    document.getElementById('btnMobileSettings').addEventListener('click', () => {
+        Swal.fire({
+            title: 'Pengaturan',
+            html: `
+                <div class="flex flex-col gap-3 mt-4">
+                    <button onclick="Swal.close(); handleExport()" class="w-full text-left bg-white border border-gray-200 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-download text-indigo-500 mr-3 text-lg w-6 text-center"></i>
+                        <div>
+                            <span class="block font-bold text-gray-800 text-sm">Ekspor (Backup JSON)</span>
+                            <span class="block text-[10px] text-gray-500">Amankan data harga ke HP Anda</span>
+                        </div>
+                    </button>
+                    <button onclick="Swal.close(); document.getElementById('inputFileImpor').click()" class="w-full text-left bg-white border border-gray-200 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-upload text-blue-500 mr-3 text-lg w-6 text-center"></i>
+                        <div>
+                            <span class="block font-bold text-gray-800 text-sm">Impor (Restore JSON)</span>
+                            <span class="block text-[10px] text-gray-500">Masukan data dari PC atau HP lain</span>
+                        </div>
+                    </button>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true
+        });
+    });
+    
     // Sort Event
     document.getElementById('sortSelect').addEventListener('change', renderListView);
 
@@ -1202,7 +1228,7 @@ function populateDetailView(item) {
 
 
 // === Export & Import (Includes Master Data!) ===
-function handleExport() {
+window.handleExport = function() {
     let data = getLocalData();
     let master = getMasterData();
     if(data.length === 0 && master.length === 0) return Swal.fire({ icon: 'info', text: 'Tidak ada data untuk dibackup.'});
