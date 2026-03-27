@@ -292,9 +292,9 @@ function handlePlatformChange() {
         platformFeesContainer.innerHTML = ''; 
         
         if (plat === 'tiktok') {
-            addPlatformFeeForm('Komisi Kategori', 8, 0);
+            addPlatformFeeForm('Komisi Kategori', 10, 0);
             addPlatformFeeForm('Komisi Dinamis', 6, 40000);
-            addPlatformFeeForm('Program XBP', 4.5, 20000);
+            addPlatformFeeForm('Program XBP', 4.5, 60000);
             addPlatformFeeForm('Biaya Proses Pesanan', 0, 1250);
         } else if (plat === 'shopee') {
             addPlatformFeeForm('Biaya Kategori', 10, 0);
@@ -1346,9 +1346,9 @@ function getAutoPlatformFees(plat) {
     plat = plat.toLowerCase();
     let fees = [];
     if (plat === 'tiktok') {
-        fees.push({nama: 'Komisi Kategori', persen: 8, maksimalRp: 0});
+        fees.push({nama: 'Komisi Kategori', persen: 10, maksimalRp: 0});
         fees.push({nama: 'Komisi Dinamis', persen: 6, maksimalRp: 40000});
-        fees.push({nama: 'Program XBP', persen: 4.5, maksimalRp: 20000});
+        fees.push({nama: 'Program XBP', persen: 4.5, maksimalRp: 60000});
         fees.push({nama: 'Biaya Proses Pesanan', persen: 0, maksimalRp: 1250});
     } else if (plat === 'shopee') {
         fees.push({nama: 'Biaya Kategori', persen: 10, maksimalRp: 0});
