@@ -6,7 +6,8 @@ function parseRupiah(str) {
 
 function formatRupiahString(angka, prefix = '') {
     if (angka === null || angka === undefined || isNaN(angka)) angka = 0;
-    let number_string = Math.round(angka).toString().replace(/[^,\d]/g, ''),
+    let isNegative = angka < 0;
+    let number_string = Math.abs(Math.round(angka)).toString().replace(/[^,\d]/g, ''),
         split = number_string.split(','),
         sisa = split[0].length % 3,
         rupiah = split[0].substr(0, sisa),
@@ -16,7 +17,9 @@ function formatRupiahString(angka, prefix = '') {
         let separator = sisa ? '.' : '';
         rupiah += separator + ribuan.join('.');
     }
-    return prefix + rupiah;
+    
+    let result = prefix + rupiah;
+    return isNegative ? '-' + result : result;
 }
 
 function formatRupiathEvent(e) {
@@ -37,6 +40,7 @@ function formatRupiathEvent(e) {
 // === Data Management ===
 const STORAGE_KEY = 'productList';
 const MASTER_KEY = 'masterDataList';
+const PLATFORM_CONF_KEY = 'platformConfigDataList';
 
 let activePlatformMenu = 'all'; 
 let activePlatformTab = 'all';
@@ -58,11 +62,57 @@ function setMasterData(data) {
     localStorage.setItem(MASTER_KEY, JSON.stringify(data));
 }
 
+function getPlatformConfigs() {
+    let m = localStorage.getItem(PLATFORM_CONF_KEY);
+    if (m) return JSON.parse(m);
+    
+    // Default legacy data
+    let defaults = [
+        {
+            id: 'shopee-default',
+            namaPlatform: 'Shopee',
+            biayaLayanan: [
+                {nama: 'Admin Star (Furniture)', persen: 10, maksimalRp: 0},
+                {nama: 'Promo XTRA', persen: 4.5, maksimalRp: 60000},
+                {nama: 'Ongkir XTRA', persen: 5, maksimalRp: 40000},
+                {nama: 'Biaya Proses', persen: 0, maksimalRp: 1250}
+            ],
+            tanggalDibuat: new Date().toISOString()
+        },
+        {
+            id: 'tiktok-default',
+            namaPlatform: 'Tiktok',
+            biayaLayanan: [
+                {nama: 'Komisi Kategori', persen: 10, maksimalRp: 0},
+                {nama: 'Komisi Dinamis', persen: 6, maksimalRp: 40000},
+                {nama: 'Program XBP', persen: 4.5, maksimalRp: 60000},
+                {nama: 'Biaya Proses Pesanan', persen: 0, maksimalRp: 1250}
+            ],
+            tanggalDibuat: new Date().toISOString()
+        }
+    ];
+    setPlatformConfigs(defaults);
+    return defaults;
+}
+function setPlatformConfigs(data) {
+    localStorage.setItem(PLATFORM_CONF_KEY, JSON.stringify(data));
+    updatePlatformDatalist();
+}
+function updatePlatformDatalist() {
+    const list = document.getElementById('platformOptions');
+    if (!list) return;
+    const configs = getPlatformConfigs();
+    let html = '';
+    configs.forEach(c => html += `<option value="${c.namaPlatform}"></option>`);
+    list.innerHTML = html;
+}
+
 // === View Management (SPA) ===
 const listView = document.getElementById('listView');
 const formView = document.getElementById('formView');
 const detailView = document.getElementById('detailView');
 const masterView = document.getElementById('masterView');
+const platConfView = document.getElementById('platConfView');
 const pageTitle = document.getElementById('pageTitle');
 const searchInput = document.getElementById('searchInput');
 
@@ -70,6 +120,7 @@ window.showListView = function() {
     formView.classList.add('hidden');
     detailView.classList.add('hidden');
     masterView.classList.add('hidden');
+    platConfView.classList.add('hidden');
     listView.classList.remove('hidden');
     listView.classList.add('block');
     refreshPlatformMenu();
@@ -85,6 +136,7 @@ window.showFormView = function(isEdit = false) {
     listView.classList.remove('block');
     detailView.classList.add('hidden');
     masterView.classList.add('hidden');
+    platConfView.classList.add('hidden');
     formView.classList.remove('hidden');
     formView.classList.add('block');
     
@@ -102,6 +154,7 @@ window.showDetailView = function(id) {
     listView.classList.remove('block');
     formView.classList.add('hidden');
     masterView.classList.add('hidden');
+    platConfView.classList.add('hidden');
     detailView.classList.remove('hidden');
     detailView.classList.add('block');
     
@@ -116,6 +169,7 @@ window.showMasterView = function() {
     listView.classList.remove('block');
     formView.classList.add('hidden');
     detailView.classList.add('hidden');
+    platConfView.classList.add('hidden');
     masterView.classList.remove('hidden');
     masterView.classList.add('block');
     
@@ -128,7 +182,9 @@ window.showMasterView = function() {
 
 function updatePageTitle() {
     if(activePlatformMenu === 'master') pageTitle.textContent = 'Master Data Produk';
+    else if(activePlatformMenu === 'platconf') pageTitle.textContent = 'Konfigurasi Platform';
     else if(activePlatformMenu === 'all') pageTitle.textContent = 'Semua Beranda';
+    else if(activePlatformMenu === 'profit') pageTitle.textContent = 'Analisis Profit';
     else {
         let pName = activePlatformMenu.toUpperCase();
         pageTitle.textContent = 'Platform: ' + pName;
@@ -157,6 +213,8 @@ const editBadge = document.getElementById('editBadge');
 
 // === Initialize App ===
 document.addEventListener('DOMContentLoaded', () => {
+    updatePlatformDatalist();
+    
     // Navigations
     document.getElementById('btnSidenavNew').addEventListener('click', () => showFormView());
     document.getElementById('btnMobileNew').addEventListener('click', () => showFormView());
@@ -194,6 +252,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         });
         
+        html += `
+                <button onclick="Swal.close(); setPlatformMenu('profit')" class="w-full text-left bg-red-50 border border-red-100 hover:bg-red-100 px-4 py-3 rounded-xl flex items-center shadow-sm mt-2 group">
+                    <i class="fa-solid fa-chart-line text-red-500 mr-3 text-lg w-6 text-center"></i>
+                    <div><span class="block font-bold text-red-800 text-sm tracking-wide">Analisis Profit</span></div>
+                </button>
+        `;
+        
         html += `</div>`;
         
         Swal.fire({
@@ -223,11 +288,25 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="block text-[10px] text-gray-500">Amankan data harga ke HP Anda</span>
                         </div>
                     </button>
+                    <button onclick="Swal.close(); showMagicModal()" class="w-full text-left bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:from-purple-100 hover:to-pink-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles text-purple-500 mr-3 text-lg w-6 text-center"></i>
+                        <div>
+                            <span class="block font-bold text-purple-800 text-sm">Buat Data Otomatis</span>
+                            <span class="block text-[10px] text-purple-500">Hitung semua produk ke platform instan</span>
+                        </div>
+                    </button>
                     <button onclick="Swal.close(); document.getElementById('inputFileImpor').click()" class="w-full text-left bg-white border border-gray-200 hover:bg-gray-50 px-4 py-3 rounded-xl flex items-center shadow-sm">
                         <i class="fa-solid fa-upload text-blue-500 mr-3 text-lg w-6 text-center"></i>
                         <div>
                             <span class="block font-bold text-gray-800 text-sm">Impor (Restore JSON)</span>
                             <span class="block text-[10px] text-gray-500">Masukan data dari PC atau HP lain</span>
+                        </div>
+                    </button>
+                    <button onclick="Swal.close(); window.handleDeleteData()" class="w-full text-left bg-red-50 border border-red-100 hover:bg-red-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                        <i class="fa-solid fa-trash-can text-red-500 mr-3 text-lg w-6 text-center"></i>
+                        <div>
+                            <span class="block font-bold text-red-800 text-sm">Hapus Data</span>
+                            <span class="block text-[10px] text-red-500">Pilihan hapus sebagian / keseluruhan</span>
                         </div>
                     </button>
                 </div>
@@ -267,13 +346,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search Listener
     searchInput.addEventListener('input', renderListView);
 
-    // Reverse Calculator
-    document.getElementById('btnReverseSidenav').addEventListener('click', showReverseModal);
+    // Reverse Calculator (listener now in HTML inline)
 
     // Export Import
     document.getElementById('btnEksporSidenav').addEventListener('click', handleExport);
     document.getElementById('btnImporSidenav').addEventListener('click', () => document.getElementById('inputFileImpor').click());
     document.getElementById('inputFileImpor').addEventListener('change', handleImport);
+    if(document.getElementById('btnHapusSidenav')) {
+        document.getElementById('btnHapusSidenav').addEventListener('click', window.handleDeleteData);
+    }
     
     // Import Master Excel
     if(document.getElementById('inputImportMaster')) {
@@ -307,12 +388,10 @@ function handlePlatformChange() {
             addPlatformFeeForm('Program XBP', 4.5, 60000);
             addPlatformFeeForm('Biaya Proses Pesanan', 0, 1250);
         } else if (plat === 'shopee') {
-            addPlatformFeeForm('Biaya Kategori', 10, 0);
-            addPlatformFeeForm('Biaya Payment', 1.8, 50000);
-            addPlatformFeeForm('Promo Xtra', 2, 20000);
-            addPlatformFeeForm('Ongkir Xtra', 5.5, 20000);
-            addPlatformFeeForm('Live Xtra', 0, 0);
-            addPlatformFeeForm('Biaya Proses Pesanan', 0, 1250);
+            addPlatformFeeForm('Admin Star (Furniture)', 10, 0);
+            addPlatformFeeForm('Promo XTRA', 4.5, 60000);
+            addPlatformFeeForm('Ongkir XTRA', 5, 40000);
+            addPlatformFeeForm('Biaya Proses', 0, 1250);
         }
     }
 }
@@ -395,6 +474,10 @@ window.saveMasterDataManual = function(e) {
     let merk = document.getElementById('mmMerk').value.trim() || '';
     let hpp = parseRupiah(document.getElementById('mmHpp').value);
     
+    let masters = getMasterData();
+    let isDupe = masters.some(m => m.namaProduk.toLowerCase() === nama.toLowerCase() && String(m.id) !== String(id));
+    if (isDupe) return Swal.fire({icon: 'error', text: `Nama produk "${nama}" sudah terdaftar di Master Data! Silakan gunakan nama lain.`});
+    
     let payload = {
         id: id || Date.now().toString(),
         namaProduk: nama,
@@ -404,18 +487,40 @@ window.saveMasterDataManual = function(e) {
         tanggalDibuat: new Date().toISOString()
     };
     
-    let masters = getMasterData();
+    let oldNama = '';
     if(id) {
         let p = masters.find(m => String(m.id) === String(id));
-        if(p) payload.tanggalDibuat = p.tanggalDibuat;
+        if(p) {
+            payload.tanggalDibuat = p.tanggalDibuat;
+            oldNama = p.namaProduk;
+        }
         masters = masters.map(m => String(m.id) === String(id) ? payload : m);
     } else {
         masters.push(payload);
     }
     setMasterData(masters);
+    
+    // Auto Update Platform Data
+    let localData = getLocalData();
+    let updatedLocal = localData.map(item => {
+        let isMatch = false;
+        if (oldNama && item.namaProduk.toLowerCase() === oldNama.toLowerCase()) isMatch = true;
+        else if (!oldNama && item.namaProduk.toLowerCase() === nama.toLowerCase()) isMatch = true;
+        
+        if (isMatch) {
+            let feesArr = item.platformFees || [];
+            let hCalc = calculateProfitSilently(hpp, parseFloat(item.adminHppPersen)||0, parseFloat(item.markupPersen)||0, parseFloat(item.diskonPersen)||0, feesArr);
+            return { ...item, namaProduk: nama, hpp: hpp, kategori: kat, merk: merk, hasil: hCalc };
+        }
+        return item;
+    });
+    setLocalData(updatedLocal);
+    renderListView();
+    refreshPlatformMenu();
+
     closeMasterModal();
     renderMasterView();
-    Swal.fire({icon:'success', title: 'Berhasil', timer:1500, showConfirmButton:false});
+    Swal.fire({icon:'success', title: 'Berhasil & Tersinkron!', timer:1500, showConfirmButton:false});
 }
 
 window.downloadMasterTemplate = function() {
@@ -478,6 +583,11 @@ function handleImportMasterExcel(e) {
                 
                 let nama = String(row[iNama]).trim();
                 let hppVal = parseRupiah(row[iHpp] || 0);
+                
+                // Skip duplicated items to enforce uniqueness
+                let exists = masters.some(m => m.namaProduk.toLowerCase() === nama.toLowerCase());
+                if(exists) continue;
+                
                 let kat = iKat !== -1 ? String(row[iKat] || '').trim() : '';
                 let merk = iMerk !== -1 ? String(row[iMerk] || '').trim() : '';
                 
@@ -526,7 +636,7 @@ function refreshPlatformMenu() {
         <a href="#" onclick="showMasterView(); return false;" class="nav-item ${activePlatformMenu === 'master' ? 'bg-indigo-50 text-indigo-700 font-bold border-indigo-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border-transparent'} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors border mb-2">
             <i class="fa-solid fa-database ${activePlatformMenu === 'master' ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'} min-w-8 text-lg"></i> Master Data
         </a>
-        <a href="#" onclick="setPlatformMenu('all'); return false;" class="nav-item ${activePlatformMenu === 'all' ? 'bg-blue-50 text-blue-700 font-bold border-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border-transparent'} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors border">
+        <a href="#" onclick="setPlatformMenu('all'); return false;" class="nav-item ${activePlatformMenu === 'all' ? 'bg-blue-50 text-blue-700 font-bold border-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border-transparent'} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors border mb-2">
             <i class="fa-solid fa-layer-group ${activePlatformMenu === 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'} min-w-8 text-lg"></i> Beranda
         </a>
     `;
@@ -537,11 +647,17 @@ function refreshPlatformMenu() {
         let iconClass = 'fa-solid fa-store';
 
         html += `
-            <a href="#" onclick="setPlatformMenu('${pKey.replace(/'/g, "\\Warehouse")}'); return false;" class="nav-item ${isActive ? 'bg-blue-50 text-blue-700 font-bold border-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border-transparent'} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors border">
+            <a href="#" onclick="setPlatformMenu('${pKey.replace(/'/g, "\\Warehouse")}'); return false;" class="nav-item ${isActive ? 'bg-blue-50 text-blue-700 font-bold border-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border-transparent'} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors border mb-1">
                 <i class="${iconClass} ${isActive ? 'opacity-100 text-blue-500' : 'opacity-60 text-gray-400 group-hover:text-gray-500 group-hover:opacity-100'} min-w-8 text-lg"></i> ${p}
             </a>
         `;
     });
+    
+    html += `
+        <a href="#" onclick="setPlatformMenu('profit'); return false;" class="nav-item ${activePlatformMenu === 'profit' ? 'bg-red-50 text-red-700 font-bold border-red-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50 border-transparent'} group flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors border mt-2">
+            <i class="fa-solid fa-chart-line ${activePlatformMenu === 'profit' ? 'text-red-500' : 'text-gray-400 group-hover:text-gray-500'} min-w-8 text-lg"></i> Analisis Profit
+        </a>
+    `;
     
     container.innerHTML = html;
 }
@@ -572,8 +688,8 @@ function buildTabs() {
         katSel.innerHTML = kHtml;
     }
 
-    // Platform Tabs (Only appear if Beranda)
-    if (activePlatformMenu === 'all') {
+    // Tab Platform Configurations
+    if (activePlatformMenu === 'all' || activePlatformMenu === 'profit') {
         if(platSel) platSel.classList.remove('hidden');
         let plats = new Set();
         data.forEach(item => { plats.add((item.platform || item.sku || 'Lainnya').trim().toUpperCase()); });
@@ -586,6 +702,14 @@ function buildTabs() {
         }
     } else {
         if(platSel) platSel.classList.add('hidden');
+    }
+    
+    // Profit Specific Filters
+    const profitSel = document.getElementById('profitFilter');
+    if (activePlatformMenu === 'profit') {
+        if(profitSel) profitSel.classList.remove('hidden');
+    } else {
+        if(profitSel) profitSel.classList.add('hidden');
     }
 }
 
@@ -603,14 +727,29 @@ function renderListView() {
     
     // Filter Sidenav Platform
     if (activePlatformMenu !== 'all' && activePlatformMenu !== 'master') {
-        filtered = filtered.filter(item => {
-            let p = (item.platform || item.sku || 'Lainnya').toLowerCase();
-            return p === activePlatformMenu;
-        });
+        if (activePlatformMenu === 'profit') {
+            const pLevel = document.getElementById('profitFilter')?.value || 'all';
+            filtered = filtered.filter(item => {
+                if (!item.hasil || typeof item.hasil.profit === 'undefined') return false;
+                let prof = item.hasil.profit;
+                let hppVal = item.hpp || 1; 
+                let profitPercent = (prof / hppVal) * 100;
+                
+                if (pLevel === 'minus') return prof <= 0;
+                if (pLevel === 'rendah') return prof > 0 && profitPercent <= 15;
+                if (pLevel === 'tinggi') return prof > 0 && profitPercent > 15;
+                return true; 
+            });
+        } else {
+            filtered = filtered.filter(item => {
+                let p = (item.platform || item.sku || 'Lainnya').toLowerCase();
+                return p === activePlatformMenu;
+            });
+        }
     }
     
-    // Filter Tab Platform (Only if Beranda)
-    if (activePlatformMenu === 'all' && fPlat !== 'all') {
+    // Filter Tab Platform
+    if ((activePlatformMenu === 'all' || activePlatformMenu === 'profit') && fPlat !== 'all') {
         filtered = filtered.filter(item => {
             let p = (item.platform || item.sku || 'Lainnya').toUpperCase();
             return p === fPlat;
@@ -662,28 +801,60 @@ function renderListView() {
             // HIGHLIGHT ON CORET (MARKUP) PRICE
             const hAwal = item.hasil.hargaAwal; 
             
-            html += `
-            <div class="bg-white border border-gray-200 rounded-xl p-4 md:p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(6,81,237,0.1)] transition-all cursor-pointer flex flex-col md:flex-row items-start md:items-center gap-4 hover:border-blue-300 group animate-fade-in list-card relative overflow-hidden" onclick="showDetailView('${item.id}')">
-                <div class="flex-1 w-full min-w-0">
-                    <div class="flex flex-wrap items-center gap-2 mb-2">
-                        <span class="bg-gray-100 text-gray-700 text-[10px] font-black uppercase px-2 py-1 rounded border border-gray-200"><i class="fa-solid fa-store pr-1 text-blue-500"></i>${plt}</span>
-                        <span class="bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded border border-blue-200"><i class="fa-solid fa-tag pr-1"></i>${mrk}</span>
-                        <span class="bg-gray-50 text-gray-500 text-[10px] font-bold uppercase px-2 py-1 rounded border border-gray-100">${cat}</span>
-                    </div>
-                    <h4 class="text-base md:text-lg font-black text-gray-800 leading-tight group-hover:text-blue-700 transition-colors truncate w-full">${item.namaProduk.toUpperCase()}</h4>
-                </div>
+            let profHtml = '';
+            if (activePlatformMenu === 'profit') {
+                let profVal = item.hasil.profit;
+                let hppVal = item.hpp || 1;
+                let profPct = (profVal / hppVal) * 100;
                 
-                <div class="flex flex-row w-full md:w-auto gap-3 items-center md:justify-end shrink-0 border-t md:border-t-0 border-gray-100 pt-3 md:pt-0">
-                    <div class="bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 shadow-sm text-right min-w-[120px]">
-                        <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wide">Jual (Refrence)</span>
-                        <span class="block font-bold text-gray-500 text-sm">Rp ${formatRupiahString(item.hasil.hargaJual)}</span>
+                let bClasses = 'bg-green-50 text-green-700 border-green-200';
+                let iconClass = 'fa-arrow-trend-up';
+                let bTitle = 'Profit Tinggi';
+                
+                if (profVal <= 0) {
+                    bClasses = 'bg-red-50 text-red-700 border-red-200';
+                    iconClass = 'fa-triangle-exclamation';
+                    bTitle = 'Rugi / Profit Minus';
+                } else if (profPct <= 15) {
+                    bClasses = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                    iconClass = 'fa-exclamation-circle';
+                    bTitle = 'Profit Rendah (< 15%)';
+                }
+                
+                profHtml = `
+                    <div class="${bClasses} px-3 py-2 rounded-lg border flex justify-between items-center w-full mt-3 md:mt-2 shadow-sm">
+                        <span class="text-[10px] font-bold uppercase tracking-wide"><i class="fa-solid ${iconClass} mr-1.5"></i>${bTitle}</span>
+                        <span class="font-black text-sm font-mono tracking-tight"><span class="text-xs mr-1 opacity-70">${profVal < 0 ? '-' : '+'}</span>Rp ${formatRupiahString(Math.abs(profVal))}</span>
                     </div>
-                    <div class="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 shadow-sm text-right min-w-[140px] transition-colors relative group-hover:border-blue-300">
-                        <span class="block text-[10px] text-blue-600 font-bold uppercase tracking-wide">Coret (Marketplace)</span>
-                        <span class="block font-black text-blue-700 text-[17px] font-mono leading-tight">Rp ${formatRupiahString(hAwal)}</span>
-                        <div class="absolute -right-1 -top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white animate-pulse"></div>
+                `;
+            }
+            
+            html += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 md:p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(6,81,237,0.1)] transition-all cursor-pointer flex flex-col items-start hover:border-blue-300 group animate-fade-in list-card overflow-hidden" onclick="showDetailView('${item.id}')">
+                
+                <div class="flex flex-col md:flex-row w-full gap-4 items-start md:items-center justify-between">
+                    <div class="flex-1 w-full min-w-0 md:w-auto shrink-0 md:shrink">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class="bg-gray-100 text-gray-700 text-[10px] font-black uppercase px-2 py-1 rounded border border-gray-200"><i class="fa-solid fa-store pr-1 text-blue-500"></i>${plt}</span>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded border border-blue-200"><i class="fa-solid fa-tag pr-1"></i>${mrk}</span>
+                            <span class="bg-gray-50 text-gray-500 text-[10px] font-bold uppercase px-2 py-1 rounded border border-gray-100">${cat}</span>
+                        </div>
+                        <h4 class="text-base md:text-lg font-black text-gray-800 leading-tight group-hover:text-blue-700 transition-colors truncate w-full">${item.namaProduk.toUpperCase()}</h4>
+                    </div>
+                    
+                    <div class="flex flex-row w-full md:w-auto gap-3 items-center md:items-stretch md:justify-end shrink-0 border-t md:border-t-0 border-gray-100 pt-3 md:pt-0">
+                        <div class="bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 shadow-sm text-right flex-1 md:min-w-[120px]">
+                            <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wide">Jual (Refrence)</span>
+                            <span class="block font-bold text-gray-500 text-sm">Rp ${formatRupiahString(item.hasil.hargaJual)}</span>
+                        </div>
+                        <div class="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 shadow-sm text-right flex-[1.5] md:min-w-[140px] transition-colors relative group-hover:border-blue-300">
+                            <span class="block text-[10px] text-blue-600 font-bold uppercase tracking-wide">Coret (Marketplace)</span>
+                            <span class="block font-black text-blue-700 text-base md:text-[17px] font-mono leading-tight truncate">Rp ${formatRupiahString(hAwal)}</span>
+                            <div class="absolute -right-1 -top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white animate-pulse"></div>
+                        </div>
                     </div>
                 </div>
+                ${profHtml}
             </div>
             `;
         });
@@ -726,13 +897,6 @@ function renderMasterView() {
     
     window.currentFilteredMasters = masters;
     
-    let btnRollback = document.getElementById('btnRollbackMarkup');
-    if(btnRollback) {
-        let hasMarkup = masters.some(m => m.historyHpp && m.historyHpp.length > 0);
-        if(hasMarkup) btnRollback.classList.remove('hidden');
-        else btnRollback.classList.add('hidden');
-    }
-    
     if (masters.length === 0) {
         container.innerHTML = `
             <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 shadow-sm">
@@ -749,11 +913,6 @@ function renderMasterView() {
     
     let html = '';
     masters.forEach(m => {
-        let markHtml = (m.historyHpp && m.historyHpp.length > 0) ? `
-                    <div class="text-right pr-4 border-r border-gray-100 flex flex-col justify-center">
-                        <span class="inline-block text-[10px] pb-0.5 font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200"><i class="fa-solid fa-layer-group mr-1.5"></i>Dimarkup ${m.historyHpp.length}x</span>
-                    </div>` : '';
-                    
         html += `
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between group hover:border-indigo-200 transition-all">
                 <div class="flex-1 w-full pr-4 mb-3 md:mb-0">
@@ -769,9 +928,11 @@ function renderMasterView() {
                         <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wide">Modal Dasar (HPP)</span>
                         <span class="block font-black text-gray-700 text-sm font-mono whitespace-nowrap">Rp ${formatRupiahString(m.hpp)}</span>
                     </div>
-                    ${markHtml}
                     
-                    <div class="flex flex-col gap-1.5 shrink-0">
+                    <div class="flex flex-row md:flex-col gap-1.5 shrink-0">
+                        <button onclick="showBulkMarkupModal('${m.id}')" class="text-gray-400 hover:text-yellow-600 bg-gray-50 hover:bg-yellow-50 transition-colors w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-yellow-200" title="Markup Khusus Produk Ini">
+                            <i class="fa-solid fa-tag text-xs"></i>
+                        </button>
                         <button onclick="showMasterModal('${m.id}')" class="text-gray-400 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 transition-colors w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-blue-200" title="Edit Master Data">
                             <i class="fa-solid fa-pen text-xs"></i>
                         </button>
@@ -787,8 +948,24 @@ function renderMasterView() {
     container.innerHTML = html;
 }
 
-window.showBulkMarkupModal = function() {
+window.showBulkMarkupModal = function(id = null) {
+    window.targetMarkupId = id;
     const modal = document.getElementById('bulkMarkupModal');
+    
+    const titleEl = modal.querySelector('h3');
+    const descEl = modal.querySelector('p');
+    if (id !== null && typeof id !== 'object') {
+        let m = getMasterData().find(x => String(x.id) === String(id));
+        if (m) {
+            titleEl.innerHTML = `<i class="fa-solid fa-tag text-yellow-500 mr-2"></i>Markup Personal`;
+            descEl.innerHTML = `Markup yang diubah di sini akan meningkatkan nilai HPP secara permanen <strong class="text-yellow-700">khusus untuk produk ${m.namaProduk}</strong> saja.`;
+        }
+    } else {
+        window.targetMarkupId = null;
+        titleEl.innerHTML = `<i class="fa-solid fa-tags text-yellow-500 mr-2"></i>Markup Masal`;
+        descEl.innerHTML = `Markup yang diubah di sini akan meningkatkan nilai HPP secara permanen bagi semua <strong class="text-gray-700">Master Data yang saat ini sedang tampil</strong> berdasarkan filter di belakang layar.`;
+    }
+    
     modal.classList.remove('hidden');
     setTimeout(() => {
         modal.classList.remove('opacity-0');
@@ -807,9 +984,10 @@ window.closeBulkMarkupModal = function() {
 
 window.showReverseModal = function() {
     const modal = document.getElementById('reverseModal');
-    document.getElementById('revHargaCoret').value = '';
+    document.getElementById('revHargaJual').value = '';
     document.getElementById('revAdminHpp').value = '30';
     document.getElementById('revMarkup').value = '95';
+    document.getElementById('revDiskon').value = '50';
     document.getElementById('revHasilHpp').textContent = 'Rp 0';
     
     modal.classList.remove('hidden');
@@ -829,50 +1007,45 @@ window.closeReverseModal = function() {
 }
 
 window.calculateReverse = function() {
-    const coret = parseRupiah(document.getElementById('revHargaCoret').value);
+    const jual = parseRupiah(document.getElementById('revHargaJual').value);
     const adminHpp = parseFloat(document.getElementById('revAdminHpp').value) || 0;
     const markup = parseFloat(document.getElementById('revMarkup').value) || 0;
+    const diskon = parseFloat(document.getElementById('revDiskon').value) || 0;
     
-    if (coret <= 0) {
+    if (jual <= 0) {
         document.getElementById('revHasilHpp').textContent = 'Rp 0';
+        window.currentReverseHpp = 0;
         return;
     }
     
-    // HPP = Harga Coret / ((1 + Admin/100) * (1 + Markup/100))
-    const multiplier = (1 + (adminHpp / 100)) * (1 + (markup / 100));
-    const hpp = coret / multiplier;
+    // Formula Reverse:
+    // 1. hargaAwal = jual / ((100 - diskon) / 100)
+    // 2. hargaRetail = hargaAwal / (1 + (markup / 100))
+    // 3. HPP = hargaRetail / (1 + (adminHpp / 100))
     
-    document.getElementById('revHasilHpp').textContent = 'Rp ' + formatRupiahString(hpp);
+    const hargaAwal = jual / ((100 - diskon) / 100);
+    const hargaRetail = hargaAwal / (1 + (markup / 100));
+    const hpp = hargaRetail / (1 + (adminHpp / 100));
+    
+    window.currentReverseHpp = Math.round(hpp);
+    document.getElementById('revHasilHpp').textContent = 'Rp ' + formatRupiahString(window.currentReverseHpp);
 }
 
-window.rollbackBulkMarkup = function() {
-    Swal.fire({
-        title: 'Rollback HPP?', 
-        text: "Anda yakin ingin membatalkan markup dan mengembalikan HPP ke riwayat nominal sebelumnya pada semua data yang tampil?", 
-        icon: 'warning',
-        showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Rollback!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            let allData = getMasterData();
-            let affectedIds = (window.currentFilteredMasters || []).map(m => String(m.id));
-            let rollbackCount = 0;
-            
-            let updatedData = allData.map(m => {
-                if(affectedIds.includes(String(m.id)) && m.historyHpp && m.historyHpp.length > 0) {
-                    let newM = { ...m };
-                    // Ambil hpp sebelumnya
-                    let prevHpp = newM.historyHpp.pop();
-                    newM.hpp = prevHpp;
-                    rollbackCount++;
-                    return newM;
-                }
-                return m;
-            });
-            
-            setMasterData(updatedData);
-            renderMasterView();
-            Swal.fire({icon: 'success', title: 'Berhasil Rollback!', text: `HPP pada ${rollbackCount} data telah dikembalikan setingkat ke belakang.`, timer: 2000, showConfirmButton: false});
-        }
+window.copyReverseHpp = function() {
+    const val = window.currentReverseHpp || 0;
+    if (val <= 0) return;
+    
+    navigator.clipboard.writeText(val).then(() => {
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil Disalin!',
+            text: `HPP Rp ${formatRupiahString(val)} telah disalin ke papan klip.`,
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false,
+            timerProgressBar: true
+        });
     });
 }
 
@@ -882,7 +1055,13 @@ window.applyBulkMarkup = function() {
     let pem = document.getElementById('bmmPem').value;
     
     let allData = getMasterData();
-    let affectedIds = (window.currentFilteredMasters || []).map(m => String(m.id));
+    let affectedIds = [];
+    
+    if (window.targetMarkupId) {
+        affectedIds = [String(window.targetMarkupId)];
+    } else {
+        affectedIds = (window.currentFilteredMasters || []).map(m => String(m.id));
+    }
     
     if(affectedIds.length === 0) {
         return Swal.fire({icon: 'error', text: 'Tidak ada data master yang tampil untuk dimarkup!'});
@@ -897,18 +1076,31 @@ window.applyBulkMarkup = function() {
             if(pem === 'ratusan_atas') res = Math.ceil(res / 100) * 100;
             else if(pem === 'ribuan_atas') res = Math.ceil(res / 1000) * 1000;
             
-            let history = m.historyHpp ? [...m.historyHpp] : [];
-            history.push(m.hpp); // Simpan hpp sebelum ditimpa
-            
-            return { ...m, hpp: res, historyHpp: history };
+            return { ...m, hpp: res };
         }
         return m;
     });
     
     setMasterData(updatedData);
+    
+    // Auto sync platform items
+    let localData = getLocalData();
+    let updatedLocal = localData.map(item => {
+        let master = updatedData.find(m => m.namaProduk.toLowerCase() === item.namaProduk.toLowerCase());
+        if (master) {
+            let feesArr = item.platformFees || [];
+            let hCalc = calculateProfitSilently(master.hpp, parseFloat(item.adminHppPersen)||0, parseFloat(item.markupPersen)||0, parseFloat(item.diskonPersen)||0, feesArr);
+            return { ...item, hpp: master.hpp, kategori: master.kategori, merk: master.merk, hasil: hCalc };
+        }
+        return item;
+    });
+    setLocalData(updatedLocal);
+    renderListView();
+    refreshPlatformMenu();
+    
     closeBulkMarkupModal();
     renderMasterView();
-    Swal.fire({icon: 'success', title: 'Markup Diterapkan!', text: `${affectedIds.length} data telah diperbarui HPP-nya.`, timer: 2000, showConfirmButton: false});
+    Swal.fire({icon: 'success', title: 'Markup Diterapkan!', text: `${affectedIds.length} Master Data dan harga di Beranda berhasil diperbarui secara otomatis.`, timer: 2500, showConfirmButton: false});
 }
 
 window.deleteMasterItem = function(id) {
@@ -1029,6 +1221,23 @@ function calculatePreview() {
     return { hargaAwal, hargaJual, totalPotongan, pendapatanBersih, profit };
 }
 
+window.handlePlatformChange = function() {
+    let plt = (document.getElementById('platform').value || '').trim();
+    
+    // Always clear existing fees when platform changes
+    document.getElementById('platformFeesContainer').innerHTML = '';
+    
+    if (!plt) return;
+    
+    let fees = getAutoPlatformFees(plt);
+    if (fees.length > 0) {
+        fees.forEach(f => {
+            addPlatformFeeForm(f.nama, f.persen, formatRupiahString(f.maksimalRp));
+        });
+    }
+    calculatePreview();
+}
+
 function addPlatformFeeForm(nama = '', persen = '', maks = '') {
     const row = document.createElement('div');
     row.className = 'grid grid-cols-1 sm:grid-cols-12 gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-200 platform-row platform-fee-row group relative';
@@ -1036,31 +1245,24 @@ function addPlatformFeeForm(nama = '', persen = '', maks = '') {
 
     row.innerHTML = `
         <div class="sm:col-span-4">
-            <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Nama / Jenis</span>
-            <input type="text" class="fee-name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold" placeholder="Contoh: Gratis Ongkir" value="${nama}">
+            <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 opacity-50">Nama / Jenis</span>
+            <input type="text" class="fee-name w-full px-3 py-2 text-sm border border-gray-200 rounded-lg font-semibold bg-gray-50 text-gray-400 cursor-not-allowed" value="${nama}" readonly>
         </div>
         <div class="sm:col-span-4">
-            <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Fee %</span>
+            <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 opacity-50">Fee %</span>
             <div class="relative">
-                <input type="number" step="any" min="0" max="100" class="fee-percent w-full text-center px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 pr-6 font-semibold" placeholder="0" value="${persen}">
-                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 text-xs font-bold">%</span>
+                <input type="number" class="fee-percent w-full text-center px-3 py-2 text-sm border border-gray-200 rounded-lg pr-6 font-semibold bg-gray-50 text-gray-400 cursor-not-allowed" value="${persen}" readonly>
+                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-300 text-xs font-bold">%</span>
             </div>
         </div>
         <div class="sm:col-span-4">
-            <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Max/Flat (Rp)</span>
-            <input type="text" class="fee-max input-rupiah font-mono w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-right font-bold text-gray-700" placeholder="Rp 0" value="${formattedMaks}">
+            <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 opacity-50">Max/Flat (Rp)</span>
+            <input type="text" class="fee-max w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-right font-bold bg-gray-50 text-gray-400 cursor-not-allowed font-mono" value="${formattedMaks}" readonly>
         </div>
-        <button type="button" class="btn-remove-fee absolute -top-2 -right-2 bg-white border border-red-200 text-red-500 hover:bg-red-500 hover:text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100" title="Hapus Potongan">
+        <button type="button" class="btn-remove-fee hidden absolute -top-2 -right-2 bg-white border border-red-200 text-red-500 hover:bg-red-500 hover:text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
             <i class="fa-solid fa-times text-xs"></i>
         </button>
     `;
-    
-    row.querySelector('.fee-percent').addEventListener('input', calculatePreview);
-    row.querySelector('.fee-max').addEventListener('input', formatRupiathEvent);
-    row.querySelector('.btn-remove-fee').addEventListener('click', function() {
-        row.remove();
-        calculatePreview();
-    });
     
     platformFeesContainer.appendChild(row);
     calculatePreview();
@@ -1077,6 +1279,11 @@ function handleFormSubmit(e) {
     
     if (!nameStr) return Swal.fire({ icon: 'error', title: 'Oops', text: 'Nama Produk harus diisi!' });
     if (hppVal <= 0) return Swal.fire({ icon: 'error', title: 'Oops', text: 'HPP (Modal) wajib lebih dari 0!' });
+    
+    // Check duplicate platform computation (Name + Platform combo)
+    let localDataAll = getLocalData();
+    let isDupePlat = localDataAll.some(i => i.namaProduk.toLowerCase() === nameStr.toLowerCase() && String(i.id) !== String(editIdInput.value) && (i.platform || '').toLowerCase() === platformStr.toLowerCase());
+    if (isDupePlat) return Swal.fire({ icon: 'error', title: 'Oops', text: `Produk "${nameStr}" sudah pernah dikalkulasi untuk platform ${platformStr || 'Lainnya'}! Silakan edit data sebelumnya.` });
     
     if (parseFloat(adminHppPersen.value || 0) > 100 || parseFloat(diskonPersen.value || 0) > 100) {
         return Swal.fire({ icon: 'error', title: 'Invalid', text: 'Persentase maksimal 100%!' });
@@ -1162,6 +1369,17 @@ function resetForm() {
     btnBatalEdit.classList.add('hidden');
     document.getElementById('btnSimpan').textContent = 'Simpan Data';
     
+    namaInput.readOnly = false;
+    hppInput.readOnly = false;
+    katInput.readOnly = false;
+    merkInput.readOnly = false;
+    
+    namaInput.classList.remove('bg-gray-100', 'text-gray-500');
+    hppInput.classList.remove('bg-transparent', 'text-gray-500');
+    hppInput.parentElement.classList.remove('bg-gray-100');
+    katInput.classList.remove('bg-gray-100', 'text-gray-500');
+    merkInput.classList.remove('bg-gray-100', 'text-gray-500');
+    
     calculatePreview();
 }
 
@@ -1188,6 +1406,17 @@ window.editItem = function(id) {
     if (item.platformFees && item.platformFees.length > 0) {
         item.platformFees.forEach(fee => addPlatformFeeForm(fee.nama, fee.persen, fee.maksimalRp));
     }
+    
+    namaInput.readOnly = true;
+    hppInput.readOnly = true;
+    katInput.readOnly = true;
+    merkInput.readOnly = true;
+    
+    namaInput.classList.add('bg-gray-100', 'text-gray-500');
+    hppInput.parentElement.classList.add('bg-gray-100');
+    hppInput.classList.add('bg-transparent', 'text-gray-500');
+    katInput.classList.add('bg-gray-100', 'text-gray-500');
+    merkInput.classList.add('bg-gray-100', 'text-gray-500');
 
     editBadge.classList.remove('hidden');
     btnBatalEdit.classList.remove('hidden');
@@ -1375,6 +1604,98 @@ function handleImport(e) {
     reader.readAsText(file);
 }
 
+window.handleDeleteData = function() {
+    let data = getLocalData();
+    let plats = new Set();
+    data.forEach(item => {
+        let p = (item.platform || item.sku || 'Lainnya').trim().toUpperCase();
+        plats.add(p);
+    });
+    const sortedPlats = Array.from(plats).sort();
+    
+    let platOptions = '';
+    sortedPlats.forEach(p => {
+        platOptions += `<option value="${p}">${p}</option>`;
+    });
+
+    Swal.fire({
+        title: 'Hapus Data',
+        html: `
+            <div class="flex flex-col gap-3 mt-4 text-left">
+                <button onclick="executeDelete('all')" class="w-full text-left bg-red-50 border border-red-200 hover:bg-red-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                    <i class="fa-solid fa-dumpster text-red-500 mr-3 text-lg w-6 text-center"></i>
+                    <div>
+                        <span class="block font-bold text-red-800 text-sm">Hapus Semua Data</span>
+                        <span class="block text-[10px] text-red-500">Master Data & Semua Harga Platform</span>
+                    </div>
+                </button>
+                <button onclick="executeDelete('all_platforms')" class="w-full text-left bg-orange-50 border border-orange-200 hover:bg-orange-100 px-4 py-3 rounded-xl flex items-center shadow-sm">
+                    <i class="fa-solid fa-trash text-orange-500 mr-3 text-lg w-6 text-center"></i>
+                    <div>
+                        <span class="block font-bold text-orange-800 text-sm">Hapus Data Semua Platform</span>
+                        <span class="block text-[10px] text-orange-500">Master Data tetap aman</span>
+                    </div>
+                </button>
+                <div class="mt-2 border border-gray-200 rounded-xl p-3 bg-gray-50 flex flex-col gap-2">
+                    <label class="block text-[11px] font-bold text-gray-700">Hapus Platform Tertentu</label>
+                    <div class="flex gap-2 isolate">
+                        <select id="deletePlatSelect" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-red-500/20 outline-none">
+                            <option value="">-- Pilih Platform --</option>
+                            ${platOptions}
+                        </select>
+                        <button onclick="executeDelete('specific_platform')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            </div>
+        `,
+        showConfirmButton: false,
+        showCloseButton: true
+    });
+}
+
+window.executeDelete = function(type) {
+    let title = '';
+    let text = '';
+    let targetPlat = '';
+    
+    if (type === 'all') {
+        title = 'Hapus Semua Data?';
+        text = 'Master Data dan semua kalkulasi harga akan dihapus permanen!';
+    } else if (type === 'all_platforms') {
+        title = 'Hapus Data Semua Platform?';
+        text = 'Semua kalkulasi harga akan dihapus. Master Data tetap aman.';
+    } else if (type === 'specific_platform') {
+        targetPlat = document.getElementById('deletePlatSelect').value;
+        if (!targetPlat) return Swal.fire({icon: 'error', text: 'Pilih platform yang ingin dihapus terlebih dahulu.'});
+        title = `Hapus Platform ${targetPlat}?`;
+        text = `Semua kalkulasi harga untuk platform ${targetPlat} akan dihapus!`;
+    }
+
+    Swal.fire({
+        title: title, text: text, icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Hapus!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            if (type === 'all') {
+                setLocalData([]);
+                setMasterData([]);
+            } else if (type === 'all_platforms') {
+                setLocalData([]);
+            } else if (type === 'specific_platform') {
+                let data = getLocalData();
+                data = data.filter(item => {
+                    let p = (item.platform || item.sku || 'Lainnya').trim().toUpperCase();
+                    return p !== targetPlat;
+                });
+                setLocalData(data);
+            }
+            
+            setPlatformMenu('all'); // refresh UI & render beranda
+            Swal.fire({ icon: 'success', title: 'Terhapus', timer: 1500, showConfirmButton: false });
+        }
+    });
+}
+
 // === Excel Harga Imports & Calculators ===
 window.downloadHargaTemplate = function() {
     const ws_data = [
@@ -1393,22 +1714,12 @@ window.downloadHargaTemplate = function() {
 }
 
 function getAutoPlatformFees(plat) {
-    plat = plat.toLowerCase();
-    let fees = [];
-    if (plat === 'tiktok') {
-        fees.push({nama: 'Komisi Kategori', persen: 10, maksimalRp: 0});
-        fees.push({nama: 'Komisi Dinamis', persen: 6, maksimalRp: 40000});
-        fees.push({nama: 'Program XBP', persen: 4.5, maksimalRp: 60000});
-        fees.push({nama: 'Biaya Proses Pesanan', persen: 0, maksimalRp: 1250});
-    } else if (plat === 'shopee') {
-        fees.push({nama: 'Biaya Kategori', persen: 10, maksimalRp: 0});
-        fees.push({nama: 'Biaya Payment', persen: 1.8, maksimalRp: 50000});
-        fees.push({nama: 'Promo Xtra', persen: 2, maksimalRp: 20000});
-        fees.push({nama: 'Ongkir Xtra', persen: 5.5, maksimalRp: 20000});
-        fees.push({nama: 'Live Xtra', persen: 0, maksimalRp: 0});
-        fees.push({nama: 'Biaya Proses Pesanan', persen: 0, maksimalRp: 1250});
+    let configs = getPlatformConfigs();
+    let config = configs.find(c => c.namaPlatform.toLowerCase().trim() === plat.toLowerCase().trim());
+    if (config) {
+        return config.biayaLayanan;
     }
-    return fees; 
+    return [];
 }
 
 function calculateProfitSilently(hppVal, adminVal, markupVal, diskonVal, feesArr) {
@@ -1482,6 +1793,10 @@ function handleImportHargaExcel(e) {
                 let merk = iMerk !== -1 ? String(row[iMerk] || '').trim() : '';
                 let hppVal = parseRupiah(row[iHpp] || 0);
                 
+                // Skip if this platform logic is already created for this specific item
+                let exists = produklokal.some(p => p.namaProduk.toLowerCase() === nama.toLowerCase() && (p.platform||'').toLowerCase() === plat.toLowerCase());
+                if(exists) continue;
+                
                 let adminVal = iAdmin !== -1 ? parseFloat(row[iAdmin] || 30) : 30;
                 let markVal = iMark !== -1 ? parseFloat(row[iMark] || 95) : 95;
                 let diskVal = iDisk !== -1 ? parseFloat(row[iDisk] || 50) : 50;
@@ -1525,38 +1840,7 @@ function handleImportHargaExcel(e) {
     reader.readAsArrayBuffer(file);
 }
 
-window.syncAllCalculations = function() {
-    Swal.fire({
-        title: 'Sinkronisasi Semua Harga?', 
-        text: "Ini akan membaca HPP terbaru dari Master Data untuk semua Kalkulasi di Beranda, lalu menghitung ulang harganya secara otomatis menggunakan persenan admin/markup/diskon yang tersimpan. Lanjutkan?", 
-        icon: 'warning',
-        showCancelButton: true, confirmButtonColor: '#2563eb', confirmButtonText: 'Ya, Sinkronisasi!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            let localData = getLocalData();
-            let masterData = getMasterData();
-            let syncCount = 0;
-            
-            let updatedLocal = localData.map(item => {
-                let master = masterData.find(m => m.namaProduk.toLowerCase() === item.namaProduk.toLowerCase());
-                if (master && master.hpp !== item.hpp) {
-                    // re-calculate based on new master.hpp
-                    let feesArr = item.platformFees || [];
-                    let hCalc = calculateProfitSilently(master.hpp, parseFloat(item.adminHppPersen)||0, parseFloat(item.markupPersen)||0, parseFloat(item.diskonPersen)||0, feesArr);
-                    
-                    let newItem = { ...item, hpp: master.hpp, hasil: hCalc };
-                    syncCount++;
-                    return newItem;
-                }
-                return item;
-            });
-            
-            setLocalData(updatedLocal);
-            renderListView(); // refresh beranda
-            Swal.fire({icon: 'success', title: 'Sinkronisasi Selesai!', text: `Terdapat ${syncCount} perhitungan di Beranda berhasil disesuaikan dengan HPP Master Data terbaru.`, timer: 3000, showConfirmButton: false});
-        }
-    });
-}
+
 
 // === PWA SYSTEM LOGIC ===
 let deferredPrompt;
@@ -1567,6 +1851,109 @@ if ('serviceWorker' in navigator) {
             .then(reg => console.log('PWA Service Worker terdaftar!', reg.scope))
             .catch(err => console.log('PWA Registrasi SW Gagal:', err));
     });
+}
+
+window.showMagicModal = function() {
+    Swal.fire({
+        title: 'Buat Harga Otomatis',
+        html: `
+            <div class="mt-4 text-left">
+                <p class="text-[11px] text-gray-500 mb-4 bg-purple-50 p-3 rounded-xl border border-purple-100 font-medium italic">Fitur ini akan menyusun perhitungan harga awal secara otomatis untuk <strong class="text-purple-700">SEMUA PRODUK MASTER DATA</strong> menuju ke satu Platform pilihan Anda.</p>
+                
+                <div class="mb-4">
+                    <label class="block text-[10px] font-black text-gray-700 uppercase mb-2">1. Pilih Platform Target <span class="text-red-500">*</span></label>
+                    <select id="magicPlat" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 shadow-sm text-sm font-bold bg-white">
+                        <option value="">-- Pilih Platform Target --</option>
+                        ${getPlatformConfigs().map(c => `<option value="${c.namaPlatform}">${c.namaPlatform}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 mb-2">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-700 uppercase mb-2">Admin HPP (%)</label>
+                        <input type="number" id="magicAdmin" value="30" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 shadow-sm text-sm font-bold text-center">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-700 uppercase mb-2">Markup (%)</label>
+                        <input type="number" id="magicMarkup" value="95" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 shadow-sm text-sm font-bold text-center">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-700 uppercase mb-2">Diskon (%)</label>
+                        <input type="number" id="magicDiskon" value="50" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 shadow-sm text-sm font-bold text-center">
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#a855f7', // purple-500
+        confirmButtonText: '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Eksekusi',
+        cancelButtonColor: '#f3f4f6', 
+        cancelButtonText: '<span class="text-gray-700 font-bold">Batal</span>', 
+        preConfirm: () => {
+            const plat = document.getElementById('magicPlat').value;
+            const admin = parseFloat(document.getElementById('magicAdmin').value) || 0;
+            const markup = parseFloat(document.getElementById('magicMarkup').value) || 0;
+            const diskon = parseFloat(document.getElementById('magicDiskon').value) || 0;
+
+            if (!plat) {
+                Swal.showValidationMessage('Silakan pilih salah satu platform!');
+                return false;
+            }
+            return { plat, admin, markup, diskon };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const d = result.value;
+            executeMagicGenerator(d.plat, d.admin, d.markup, d.diskon);
+        }
+    });
+}
+
+window.executeMagicGenerator = function(targetPlatform, adminHpp, markup, diskon) {
+    let masters = getMasterData();
+    let localData = getLocalData();
+    let generatedCount = 0;
+    
+    if (masters.length === 0) {
+        return Swal.fire({icon: 'error', title: 'Data Kosong', text: 'Tidak ada data di Menu Master Data. Silakan tambah Master Data terlebih dahulu.'});
+    }
+    
+    masters.forEach(m => {
+        // Cek apakah produk ini sudah mentas di platform target tersebut
+        let isExist = localData.some(loc => loc.namaProduk.toLowerCase() === m.namaProduk.toLowerCase() && (loc.platform || '').toLowerCase() === targetPlatform.toLowerCase());
+        
+        if (!isExist) {
+            const feesArr = getAutoPlatformFees(targetPlatform);
+            
+            let hCalc = calculateProfitSilently(m.hpp, adminHpp, markup, diskon, feesArr);
+            
+            localData.push({
+                id: Date.now().toString() + Math.floor(Math.random() * 99999) + generatedCount,
+                namaProduk: m.namaProduk,
+                platform: targetPlatform,
+                kategori: m.kategori || '',
+                merk: m.merk || '',
+                sku: targetPlatform,
+                hpp: m.hpp,
+                adminHppPersen: adminHpp,
+                markupPersen: markup,
+                diskonPersen: diskon,
+                platformFees: feesArr,
+                hasil: hCalc,
+                tanggalDibuat: new Date().toISOString()
+            });
+            generatedCount++;
+        }
+    });
+    
+    if (generatedCount > 0) {
+        setLocalData(localData);
+        refreshPlatformMenu();
+        showListView();
+        Swal.fire({icon: 'success', title: 'Magic Selesai!', text: `Berhasil membuat ${generatedCount} perhitungan otomatis untuk platform ${targetPlatform}.`, timer: 3000, showConfirmButton: false});
+    } else {
+        Swal.fire({icon: 'info', title: 'Pemberitahuan', text: `Semua Master Data sudah dibuatkan perhitungannya untuk platform ${targetPlatform}. Tidak ada data baru yang diproses.`, timer: 3000, showConfirmButton: false});
+    }
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -1607,5 +1994,249 @@ if(btnClosePWA) {
         const pwaBanner = document.getElementById('pwaInstallBanner');
         pwaBanner.classList.add('translate-y-32');
         setTimeout(() => pwaBanner.classList.add('hidden'), 500);
+    });
+}
+
+
+// === Konfigurasi Platform Logic UI ===
+window.showPlatConfView = function() {
+    if(typeof activePlatformMenu !== 'undefined') {
+        activePlatformMenu = 'platconf';
+        refreshPlatformMenu();
+        updatePageTitle();
+    }
+    document.getElementById('formView').classList.add('hidden');
+    document.getElementById('detailView').classList.add('hidden');
+    document.getElementById('masterView').classList.add('hidden');
+    document.getElementById('listView').classList.add('hidden');
+    document.getElementById('listView').classList.remove('block');
+    document.getElementById('formView').classList.remove('block');
+    document.getElementById('masterView').classList.remove('block');
+    
+    document.getElementById('platConfView').classList.remove('hidden');
+    document.getElementById('platConfView').classList.add('block');
+    
+    renderPlatConfView();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+window.renderPlatConfView = function() {
+    const container = document.getElementById('platConfContainer');
+    const configs = getPlatformConfigs();
+    
+    if (configs.length === 0) {
+        container.innerHTML = '<div class="col-span-full p-6 bg-white border border-gray-200 rounded-xl text-center text-gray-400 font-bold">Belum ada konfigurasi platform yang tersimpan.</div>';
+        return;
+    }
+    
+    let html = '';
+    configs.forEach(c => {
+        let feesHtml = '';
+        let totalPersen = 0;
+        let totalMaksRp = 0;
+        if (c.biayaLayanan && c.biayaLayanan.length > 0) {
+            c.biayaLayanan.forEach(f => {
+                totalPersen += f.persen || 0;
+                totalMaksRp += f.maksimalRp || 0;
+                let maksTxt = f.maksimalRp > 0 ? `Max/Flat Rp ${formatRupiahString(f.maksimalRp)}` : 'Tanpa Batas Maksimal';
+                feesHtml += `
+                    <div class="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 px-2 rounded transition-colors">
+                        <span class="text-[11px] font-bold text-gray-700">${f.nama}</span>
+                        <div class="text-right">
+                            <span class="block text-[13px] font-black text-indigo-600">${f.persen}%</span>
+                            <span class="block text-[9px] text-gray-500 font-mono tracking-tighter">${maksTxt}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            let maxTotalTxt = totalMaksRp > 0 ? `+ Max/Flat Rp ${formatRupiahString(totalMaksRp)}` : '';
+            feesHtml += `
+                <div class="flex justify-between items-center py-3 bg-indigo-50/50 mt-2 px-3 rounded-lg border border-indigo-100/50">
+                    <span class="text-[11px] font-black text-indigo-900 tracking-wider">TOTAL POTONGAN:</span>
+                    <div class="text-right">
+                        <span class="block text-sm font-black text-indigo-700">${Number(totalPersen.toFixed(2))}%</span>
+                        <span class="block text-[10px] text-indigo-500 font-mono font-bold">${maxTotalTxt}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            feesHtml = '<div class="text-[11px] text-gray-400 py-2 italic font-medium px-2">Tidak ada tanggungan potongan.</div>';
+        }
+    
+        html += `
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group animate-fade-in list-card">
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 group-hover:bg-indigo-50/50 transition-colors">
+                    <h3 class="font-black text-gray-800 tracking-tight text-lg"><i class="fa-solid fa-store text-indigo-500 mr-2"></i>${c.namaPlatform}</h3>
+                    <div class="flex gap-2">
+                        <button onclick="showPlatConfModal('${c.id}')" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-colors shadow-sm"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deletePlatConf('${c.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                </div>
+                <div class="p-4 flex-1">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-3">Rincian Potongan Fee</p>
+                    <div class="space-y-0.5">
+                        ${feesHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+window.showPlatConfModal = function(id = 'new') {
+    const modal = document.getElementById('platConfModal');
+    const content = document.getElementById('platConfModalContent');
+    const pcId = document.getElementById('pcId');
+    const title = document.getElementById('platConfModalTitle');
+    const nama = document.getElementById('pcNama');
+    const container = document.getElementById('pcRowsContainer');
+    
+    container.innerHTML = '';
+    
+    if (id === 'new') {
+        pcId.value = '';
+        title.textContent = 'Tambah Konfigurasi Platform';
+        nama.value = '';
+        addPcRow(); // Add 1 empty row by default
+    } else {
+        title.textContent = 'Edit Konfigurasi Platform';
+        const config = getPlatformConfigs().find(c => String(c.id) === String(id));
+        if(config) {
+            pcId.value = config.id;
+            nama.value = config.namaPlatform;
+            if(config.biayaLayanan && config.biayaLayanan.length > 0) {
+                config.biayaLayanan.forEach(f => addPcRow(f.nama, f.persen, f.maksimalRp));
+            } else {
+                addPcRow();
+            }
+        }
+    }
+    
+    modal.classList.remove('hidden');
+    void modal.offsetWidth; // trigger reflow
+    modal.classList.remove('opacity-0');
+    content.classList.remove('scale-95');
+    setTimeout(() => { nama.focus(); }, 300);
+}
+
+window.closePlatConfModal = function() {
+    const modal = document.getElementById('platConfModal');
+    const content = document.getElementById('platConfModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); }, 300);
+}
+
+window.addPcRow = function(name = '', pct = '', maxRp = '') {
+    const container = document.getElementById('pcRowsContainer');
+    const div = document.createElement('div');
+    div.className = 'grid grid-cols-12 gap-2 items-center pc-fee-row bg-white p-2 rounded-lg border border-gray-100 shadow-sm relative group mb-2';
+    
+    let maxVal = maxRp ? formatRupiahString(maxRp) : '';
+    
+    div.innerHTML = `
+        <div class="col-span-5 relative">
+            <input type="text" class="pc-name w-full pl-2 pr-2 py-2.5 border border-gray-200 rounded-md bg-white text-xs font-semibold focus:ring-1 focus:ring-indigo-500 text-gray-700" value="${name}" placeholder="Misal: Biaya Admin" required>
+        </div>
+        <div class="col-span-3">
+            <input type="number" step="0.1" class="pc-pct w-full text-center py-2.5 border border-gray-200 rounded-md bg-white text-xs font-bold text-indigo-700 focus:ring-1 focus:ring-indigo-500" value="${pct}" placeholder="0" required>
+        </div>
+        <div class="col-span-4 relative">
+            <input type="text" class="pc-max w-full pl-6 pr-6 py-2.5 border border-gray-200 rounded-md bg-white text-xs font-mono font-bold text-gray-700 focus:ring-1 focus:ring-indigo-500" value="${maxVal}" placeholder="0" oninput="formatRupiathEvent(event)">
+            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">Rp</span>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="absolute right-1 top-1/2 -translate-y-1/2 text-red-300 hover:text-red-500 transition-colors p-1"><i class="fa-solid fa-times text-xs"></i></button>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+window.savePlatConf = function(e) {
+    e.preventDefault();
+    const id = document.getElementById('pcId').value;
+    const nama = document.getElementById('pcNama').value.trim();
+    
+    let fees = [];
+    document.querySelectorAll('.pc-fee-row').forEach(row => {
+        let fnama = row.querySelector('.pc-name').value.trim();
+        let fpct = parseFloat(row.querySelector('.pc-pct').value) || 0;
+        let fmax = parseRupiah(row.querySelector('.pc-max').value) || 0;
+        if(fnama) {
+            fees.push({ nama: fnama, persen: fpct, maksimalRp: fmax });
+        }
+    });
+    
+    let configs = getPlatformConfigs();
+    let isEditing = false;
+    
+    if (id) {
+        let idx = configs.findIndex(c => String(c.id) === String(id));
+        if(idx !== -1) {
+            configs[idx].namaPlatform = nama;
+            configs[idx].biayaLayanan = fees;
+            isEditing = true;
+        }
+    }
+    
+    if (!isEditing) {
+        if(configs.some(c => c.namaPlatform.toLowerCase() === nama.toLowerCase())) {
+            return Swal.fire({ icon: 'error', text: 'Nama Platform tersebut sudah ada di Konfigurasi!' });
+        }
+        configs.push({
+            id: Date.now().toString() + Math.floor(Math.random()*999),
+            namaPlatform: nama,
+            biayaLayanan: fees,
+            tanggalDibuat: new Date().toISOString()
+        });
+    }
+    
+    setPlatformConfigs(configs);
+    
+    // SYNC: Update all existing products using this platform
+    let products = getLocalData();
+    let updatedCount = 0;
+    products = products.map(p => {
+        if ((p.platform || '').toLowerCase() === nama.toLowerCase()) {
+            p.platformFees = fees;
+            p.hasil = calculateProfitSilently(p.hpp, p.adminHppPersen, p.markupPersen, p.diskonPersen, fees);
+            updatedCount++;
+            return p;
+        }
+        return p;
+    });
+    
+    if (updatedCount > 0) {
+        setLocalData(products);
+    }
+
+    closePlatConfModal();
+    renderPlatConfView();
+    Swal.fire({ 
+        icon: 'success', 
+        title: 'Tersimpan', 
+        text: `Konfigurasi platform berhasil disimpan. ${updatedCount > 0 ? updatedCount + ' produk terkait telah diperbarui secara otomatis.' : ''}`, 
+        timer: 3000, 
+        showConfirmButton: false 
+    });
+}
+
+window.deletePlatConf = function(id) {
+    Swal.fire({
+        title: 'Hapus Platform?',
+        text: 'Platform ini akan dihapus dari daftar konfigurasi. Kalkulasi sebelumnya tidak terhapus.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#e5e7eb',
+        confirmButtonText: '<i class="fa-solid fa-trash mr-2"></i>Hapus',
+        cancelButtonText: '<span class="text-gray-700 font-bold">Batal</span>'
+    }).then(res => {
+        if(res.isConfirmed) {
+            let configs = getPlatformConfigs();
+            configs = configs.filter(c => String(c.id) !== String(id));
+            setPlatformConfigs(configs);
+            renderPlatConfView();
+            Swal.fire({ icon: 'success', title: 'Terhapus', timer: 1500, showConfirmButton: false });
+        }
     });
 }

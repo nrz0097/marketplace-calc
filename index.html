@@ -33,26 +33,29 @@
         </div>
         <div class="p-4 flex-1 overflow-y-auto w-full">
             <button id="btnSidenavNew"
-                class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all mb-6 shadow-md shadow-blue-500/30 flex items-center justify-center"><i
+                class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all mb-3 shadow-md shadow-blue-500/30 flex items-center justify-center"><i
                     class="fa-solid fa-plus mr-2 text-blue-200"></i>Buat Harga Baru</button>
+            <button id="btnMagicGenerate" onclick="showMagicModal()"
+                class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2.5 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 active:scale-95 transition-all mb-6 shadow-md shadow-pink-500/30 flex items-center justify-center"><i
+                    class="fa-solid fa-wand-magic-sparkles mr-2 text-purple-100"></i>Buat Data Otomatis</button>
             <nav class="space-y-1.5" id="sidebarMenu">
                 <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 mt-2">Sistem Navigasi</p>
                 <div id="platformMenu" class="space-y-1 w-full">
                     <!-- Javascript populates this -->
                 </div>
             </nav>
+
+            <nav class="space-y-1.5 mt-6 border-t border-gray-100 pt-5" id="sidebarUtilitas">
+                <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Sistem Utilitas</p>
+                <button onclick="showPlatConfView()" class="w-full text-left text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center group"><i class="fa-solid fa-cogs min-w-8 text-lg text-gray-400 group-hover:text-indigo-400 transition-colors"></i>Konfigurasi Platform</button>
+                <button onclick="showReverseModal()" class="w-full text-left text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center group"><i class="fa-solid fa-calculator min-w-8 text-lg text-gray-400 group-hover:text-blue-400 transition-colors"></i>Reverse Kalkulator</button>
+            </nav>
         </div>
         <div class="p-4 border-t border-gray-100 space-y-1.5 bg-gray-50/50">
             <input type="file" id="inputFileImpor" accept=".json" class="hidden">
-            <button id="btnReverseSidenav"
-                class="w-full text-left text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-4 py-2.5 text-sm font-bold rounded-lg transition-colors flex items-center"><i
-                    class="fa-solid fa-calculator min-w-5 mr-3 text-center text-blue-400"></i>Reverse Kalkulator</button>
-            <button id="btnEksporSidenav"
-                class="w-full text-left text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center"><i
-                    class="fa-solid fa-download min-w-5 mr-3 text-center text-gray-400"></i>Ekspor / Backup</button>
-            <button id="btnImporSidenav"
-                class="w-full text-left text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center"><i
-                    class="fa-solid fa-upload min-w-5 mr-3 text-center text-gray-400"></i>Impor / Restore</button>
+            <button id="btnEksporSidenav" class="w-full text-left text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center"><i class="fa-solid fa-download min-w-6 text-center text-gray-400"></i>Ekspor JSON</button>
+            <button id="btnImporSidenav" class="w-full text-left text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center"><i class="fa-solid fa-upload min-w-6 text-center text-gray-400"></i>Impor JSON</button>
+            <button id="btnHapusSidenav" class="w-full text-left text-red-600 hover:text-red-900 hover:bg-red-50 px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center"><i class="fa-solid fa-trash min-w-6 text-center text-red-400"></i>Hapus Keseluruhan</button>
         </div>
     </aside>
 
@@ -102,6 +105,12 @@
                     </select>
                     <select id="filterPlat" onchange="renderListView()" class="w-full md:w-auto bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 shadow-sm pr-8 hidden cursor-pointer">
                         <option value="all">Semua Platform</option>
+                    </select>
+                    <select id="profitFilter" onchange="renderListView()" class="w-full md:w-auto bg-red-50 text-red-800 border border-red-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-red-500/20 shadow-sm pr-8 hidden cursor-pointer">
+                        <option value="all">Semua Analisis Profit</option>
+                        <option value="tinggi">🔥 Profit Tinggi (> 15%)</option>
+                        <option value="rendah">⚠️ Profit Rendah (0% - 15%)</option>
+                        <option value="minus">❌ Rugi / Profit Minus</option>
                     </select>
                     <div class="relative shrink-0 w-full md:w-auto">
                         <select id="sortSelect" onchange="renderListView()" class="w-full md:w-auto pl-9 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700 shadow-sm appearance-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer">
@@ -175,12 +184,11 @@
                                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                                         <i class="fa-solid fa-store text-gray-400"></i>
                                     </div>
-                                    <input list="platformOptions" id="platform" required
+                                    <input list="platformOptions" id="platform" required oninput="handlePlatformChange()"
                                         class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm text-sm"
                                         placeholder="Ketik atau pilih platform untuk meload biaya otomatis (Tiktok / Shopee)...">
                                     <datalist id="platformOptions">
-                                        <option value="Tiktok"></option>
-                                        <option value="Shopee"></option>
+                                        <!-- JS populates this -->
                                     </datalist>
                                 </div>
                             </div>
@@ -280,10 +288,10 @@
                                 <div>
                                     <h2 class="text-xl font-bold text-gray-800 flex items-center"><i
                                             class="fa-solid fa-tags text-blue-500 mr-2"></i>Biaya Platform</h2>
-                                    <p class="text-xs text-gray-500 font-medium mt-1">Potongan otomatis dimuat saat Anda memilih platform, atau Anda dapat menambahkannya manual.</p>
+                                    <p class="text-[11px] text-gray-500 font-medium mt-1 uppercase tracking-wider bg-gray-50 p-2 rounded-lg border border-gray-100"><i class="fa-solid fa-info-circle mr-1 text-blue-500"></i> Dikelola otomatis via Konfigurasi Platform</p>
                                 </div>
                                 <button type="button" id="btnAddPlatform"
-                                    class="text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 px-4 py-2 rounded-lg font-bold transition flex items-center shadow-sm whitespace-nowrap"><i
+                                    class="hidden text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 px-4 py-2 rounded-lg font-bold transition flex items-center shadow-sm whitespace-nowrap"><i
                                         class="fa-solid fa-plus mr-1.5"></i> Tambah</button>
                             </div>
 
@@ -395,18 +403,31 @@
                     <select id="masterFilterMerk" onchange="renderMasterView()" class="w-full md:w-auto bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 focus:ring-2 focus:ring-indigo-500/20 shadow-sm pr-8">
                         <option value="all">Semua Merk</option>
                     </select>
-                    <button id="btnRollbackMarkup" onclick="rollbackBulkMarkup()" class="shrink-0 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-bold shadow-sm items-center justify-center transition-colors w-full md:w-auto hidden">
-                        <i class="fa-solid fa-rotate-left mr-2 text-red-600"></i> Rollback
-                    </button>
+
                     <button onclick="showBulkMarkupModal()" class="shrink-0 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center transition-colors w-full md:w-auto">
                         <i class="fa-solid fa-tags mr-2 text-yellow-600"></i> Markup Masal
                     </button>
-                    <button onclick="syncAllCalculations()" class="shrink-0 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center transition-colors w-full md:w-auto" title="Update seluruh harga di Beranda dengan HPP Master Data terbaru">
-                        <i class="fa-solid fa-rotate mr-2 text-blue-600"></i> Sinkron Harga
-                    </button>
+
                 </div>
 
                 <div class="flex flex-col space-y-3" id="masterListContainer">
+                    <!-- JS fills this -->
+                </div>
+            </div>
+            
+            <!-- VIEW: PLATFORM CONFIG -->
+            <div id="platConfView" class="hidden animate-fade-in w-full">
+                <div class="mb-5 flex flex-col md:flex-row gap-3 md:items-center justify-between bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                    <div>
+                        <h2 class="text-xl font-black text-indigo-900 tracking-tight mb-1"><i class="fa-solid fa-cogs mr-2 text-indigo-500"></i>Konfigurasi Platform</h2>
+                        <p class="text-xs text-indigo-600 font-medium max-w-xl">Atur nama platform resmi Anda beserta rincian potongan biaya layanannya. Pengaturan di sini akan dijadikan referensi Default saat Kalkulator dan fitur Magic digunakan.</p>
+                    </div>
+                    <button onclick="showPlatConfModal()" class="shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-indigo-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-plus mr-2"></i> Tambah Platform
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="platConfContainer">
                     <!-- JS fills this -->
                 </div>
             </div>
@@ -598,6 +619,55 @@
                 </form>
             </div>
         </div>
+        </div>
+    </div>
+
+    <!-- Platform Config Modal Overlay -->
+    <div id="platConfModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-y-auto w-full pt-10 pb-10">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 my-auto transform transition-transform duration-300 scale-95" id="platConfModalContent">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                <h3 class="text-lg font-black text-gray-800" id="platConfModalTitle">Konfigurasi Platform</h3>
+                <button onclick="closePlatConfModal()" class="text-gray-400 hover:text-gray-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <form id="platConfForm" onsubmit="savePlatConf(event)">
+                    <input type="hidden" id="pcId">
+                    
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nama Platform <span class="text-red-500">*</span></label>
+                        <input type="text" id="pcNama" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold shadow-sm" placeholder="Contoh: Shopee">
+                    </div>
+                    
+                    <div class="mb-3 flex justify-between items-end border-t border-gray-100 pt-5">
+                        <label class="block text-xs font-bold text-gray-700 uppercase">Rincian Potongan Fee</label>
+                        <button type="button" onclick="addPcRow()" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-bold transition-colors">
+                            <i class="fa-solid fa-plus mr-1"></i> Tambah Baris
+                        </button>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden mb-6">
+                        <div class="grid grid-cols-12 gap-2 bg-gray-100/80 p-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
+                            <div class="col-span-5 pl-1">Nama Potongan</div>
+                            <div class="col-span-3 text-center">Persen (%)</div>
+                            <div class="col-span-4 text-center">Maks/Flat (Rp)</div>
+                        </div>
+                        <div id="pcRowsContainer" class="p-2 space-y-2 max-h-48 overflow-y-auto">
+                            <!-- JS Fills rows -->
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex gap-3">
+                        <button type="button" onclick="closePlatConfModal()" class="flex-1 px-4 py-3.5 bg-gray-100 border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                        <button type="submit" class="flex-[2] px-4 py-3.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-[0.98] transition-all">Simpan Konfigurasi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div id="bulkMarkupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
@@ -653,29 +723,33 @@
             
             <!-- Body -->
             <div class="p-6">
-                <p class="text-[11px] font-medium text-gray-500 mb-5 bg-gray-50 p-2.5 rounded-lg border border-gray-100">Cari Modal Dasar (HPP) dari Harga Coret (Marketplace) yang sudah diketahui.</p>
+                <p class="text-[11px] font-medium text-gray-500 mb-5 bg-gray-50 p-2.5 rounded-lg border border-gray-100">Cari Modal Dasar (HPP) dari Harga Jual (Marketplace) yang sudah diketahui.</p>
 
                 <div class="mb-4">
-                    <label class="block text-[10px] font-bold text-gray-700 uppercase mb-2">Harga Coret (Marketplace) <span class="text-red-500">*</span></label>
+                    <label class="block text-[10px] font-bold text-gray-700 uppercase mb-2">Harga Jual (Marketplace) <span class="text-red-500">*</span></label>
                     <div class="relative group">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-blue-500 font-bold">Rp</span>
-                        <input type="text" id="revHargaCoret" oninput="formatRupiathEvent(event); calculateReverse()" required class="input-rupiah w-full pl-12 pr-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-base font-black text-blue-700 font-mono shadow-sm bg-blue-50/30" placeholder="0">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-emerald-500 font-bold">Rp</span>
+                        <input type="text" id="revHargaJual" oninput="formatRupiathEvent(event); calculateReverse()" required class="input-rupiah w-full pl-12 pr-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base font-black text-emerald-700 font-mono shadow-sm bg-emerald-50/30" placeholder="0">
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-3 gap-2 mb-6">
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Admin HPP (%)</label>
+                        <label class="block text-[8px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Admin HPP (%)</label>
                         <div class="relative">
-                            <input type="number" step="any" id="revAdminHpp" oninput="calculateReverse()" value="30" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
-                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 font-bold">%</span>
+                            <input type="number" step="any" id="revAdminHpp" oninput="calculateReverse()" value="30" class="w-full px-2 py-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Markup Harga (%)</label>
+                        <label class="block text-[8px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Markup Harga (%)</label>
                         <div class="relative">
-                            <input type="number" step="any" id="revMarkup" oninput="calculateReverse()" value="95" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
-                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 font-bold">%</span>
+                            <input type="number" step="any" id="revMarkup" oninput="calculateReverse()" value="95" class="w-full px-2 py-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[8px] font-bold text-gray-700 uppercase mb-1 whitespace-nowrap">Diskon Harga (%)</label>
+                        <div class="relative">
+                            <input type="number" step="any" id="revDiskon" oninput="calculateReverse()" value="50" class="w-full px-2 py-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 shadow-sm text-center">
                         </div>
                     </div>
                 </div>
@@ -683,7 +757,12 @@
                 <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center shadow-inner relative overflow-hidden">
                     <div class="absolute -right-4 -top-4 w-12 h-12 bg-indigo-500/10 rounded-full blur-md"></div>
                     <span class="block uppercase text-indigo-800 font-bold text-[10px] tracking-widest mb-1">Hasil Modal Dasar (HPP)</span>
-                    <span id="revHasilHpp" class="block text-2xl font-black text-indigo-600 font-mono">Rp 0</span>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="revHasilHpp" class="block text-2xl font-black text-indigo-600 font-mono">Rp 0</span>
+                        <button type="button" onclick="copyReverseHpp()" class="w-8 h-8 rounded-lg bg-white border border-indigo-200 text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-all flex items-center justify-center shadow-sm active:scale-95" title="Salin HPP">
+                            <i class="fa-solid fa-copy text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
